@@ -5,7 +5,6 @@ export interface Todo {
   title: string;
   status: TodoStatus;
   createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface CreateTodoInput {
@@ -14,22 +13,4 @@ export interface CreateTodoInput {
 
 export interface UpdateTodoStatusInput {
   status: TodoStatus;
-}
-
-export interface UpdateTodoTitleInput {
-  title: string;
-}
-
-export interface TodoListQuery {
-  status?: TodoStatus;
-  search?: string;
-  limit?: number;
-  offset?: number;
-  sortBy?: 'createdAt' | 'title';
-  order?: 'asc' | 'desc';
-}
-
-export interface TodoStats {
-  total: number;
-  byStatus: Record<TodoStatus, number>;
 }

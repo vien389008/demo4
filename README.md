@@ -1,22 +1,15 @@
-# Node.js + TypeScript Learning Project (Nâng cấp)
+# Node.js + TypeScript Learning Project
 
-Dự án này giúp bạn **vừa thực hành vừa tự kiểm tra** khi học Node.js + TypeScript thông qua một API Todo theo kiến trúc nhiều tầng.
+Dự án này giúp bạn **vừa thực hành vừa tự kiểm tra** khi học Node.js + TypeScript thông qua một API Todo nhỏ.
 
-## 1) Điểm mới sau khi nâng cấp
+## 1) Mục tiêu học
 
-- Thêm **search/filter/pagination/sort** cho danh sách todo.
-- Thêm endpoint **đổi title** và **xóa todo**.
-- Thêm endpoint **thống kê** (`/todos/stats`) để theo dõi tiến độ.
-- Mở rộng test để bao phủ các luồng mới.
+- Biết cách tổ chức dự án Node.js theo tầng: `route -> service -> repository`.
+- Biết cấu hình TypeScript cho môi trường Node.
+- Biết viết test API bằng `vitest` + `supertest`.
+- Biết chạy bộ lệnh `check` để đảm bảo code ổn định trước khi commit.
 
-## 2) Mục tiêu học
-
-- Hiểu tách tầng: `route -> service -> repository`.
-- Hiểu validate input/query bằng `zod`.
-- Hiểu cách thiết kế API có query params thực tế.
-- Hiểu cách viết test API để tự check logic mỗi lần refactor.
-
-## 3) Cách chạy nhanh
+## 2) Cách chạy nhanh
 
 ```bash
 npm install
@@ -25,98 +18,99 @@ npm run dev
 
 Mặc định server chạy tại `http://localhost:3000`.
 
-## 4) Scripts quan trọng
+## 3) Các script quan trọng
 
-- `npm run dev`: chạy server watch mode (tsx)
-- `npm run typecheck`: kiểm tra kiểu TS
-- `npm run test`: chạy test Vitest
-- `npm run build`: build ra `dist/`
-- `npm run check`: chạy `typecheck + test + build`
+- `npm run dev`: chạy server ở chế độ watch (qua `tsx`).
+- `npm run typecheck`: kiểm tra kiểu TypeScript, không build file JS.
+- `npm run test`: chạy test tự động bằng Vitest.
+- `npm run build`: biên dịch TS sang JS trong thư mục `dist/`.
+- `npm run check`: chạy lần lượt `typecheck + test + build`.
 
-## 5) API endpoints
+> Gợi ý học: mỗi khi sửa code, hãy chạy `npm run check` để biết mình đang sai ở đâu.
 
-### Health
+## 4) API endpoint
+
+### Health check
+
 - `GET /health`
-
-### Todo list (có query)
-- `GET /todos`
-- Query params (optional):
-  - `status`: `todo | in_progress | done`
-  - `search`: tìm theo title
-  - `limit`: 1..100
-  - `offset`: >= 0
-  - `sortBy`: `createdAt | title`
-  - `order`: `asc | desc`
-
-Response mẫu:
+- Kết quả mẫu:
 
 ```json
-{
-  "items": [],
-  "total": 0
-}
+{ "status": "ok" }
 ```
 
-### Create todo
+### Lấy danh sách todo
+
+- `GET /todos`
+
+### Tạo todo
+
 - `POST /todos`
+- Body:
 
 ```json
 { "title": "Learn Node.js + TypeScript" }
 ```
 
-### Update status
+- Điều kiện:
+  - `title` tối thiểu 3 ký tự
+  - `title` tối đa 120 ký tự
+
+### Cập nhật trạng thái
+
 - `PATCH /todos/:id/status`
+- Body:
 
 ```json
 { "status": "done" }
 ```
 
-### Update title
-- `PATCH /todos/:id/title`
+- `status` chỉ nhận: `todo`, `in_progress`, `done`.
 
-```json
-{ "title": "New title" }
-```
+## 5) Giải thích từng file
 
-### Delete todo
-- `DELETE /todos/:id`
-- Thành công trả `204 No Content`
+### `src/index.ts`
+Điểm vào chương trình. File này tạo app và `listen` cổng chạy server.
 
-### Stats
-- `GET /todos/stats`
+### `src/app.ts`
+Khởi tạo Express app, bật JSON parser, đăng ký route `/health` và nhóm route `/todos`.
 
-Response mẫu:
+### `src/domain/todo.ts`
+Khai báo type/interface cho dữ liệu Todo. Đây là “hợp đồng dữ liệu” của app.
 
-```json
-{
-  "total": 3,
-  "byStatus": {
-    "todo": 1,
-    "in_progress": 1,
-    "done": 1
-  }
-}
-```
+### `src/repositories/todoRepository.ts`
+Tầng lưu trữ dữ liệu (in-memory). Chịu trách nhiệm CRUD cơ bản trên mảng todo.
 
-## 6) Giải thích luồng xử lý
+### `src/services/todoService.ts`
+Tầng nghiệp vụ. Nơi xử lý logic như chuẩn hóa title, kiểm tra todo tồn tại trước khi cập nhật.
 
-1. Request vào `routes` để validate.
-2. Route gọi `service` xử lý nghiệp vụ.
-3. Service gọi `repository` để đọc/ghi dữ liệu in-memory.
-4. Kết quả trả ngược lên route -> response JSON.
+### `src/routes/todoRoutes.ts`
+Tầng HTTP: nhận request, validate body bằng Zod, gọi service, trả response phù hợp.
 
-## 7) Giải thích nhanh từng file
+### `tests/todo.api.test.ts`
+Test luồng API end-to-end ở mức app (không cần mở port thật), giúp bạn kiểm tra nhanh khi học.
 
-- `src/index.ts`: entrypoint, start server.
-- `src/app.ts`: khởi tạo express app + mount routes.
-- `src/domain/todo.ts`: kiểu dữ liệu, query model, stats model.
-- `src/repositories/todoRepository.ts`: thao tác dữ liệu (list/filter/sort/update/delete/stats).
-- `src/services/todoService.ts`: tầng business logic.
-- `src/routes/todoRoutes.ts`: HTTP layer + validate body/query.
-- `tests/todo.api.test.ts`: integration tests cho các luồng API.
+### `tsconfig.json` / `tsconfig.build.json`
+- `tsconfig.json`: dùng chung cho typecheck và test.
+- `tsconfig.build.json`: chuyên cho build production từ thư mục `src/`.
 
-## 8) Gợi ý học tiếp
+### `vitest.config.ts`
+Cấu hình Vitest dùng môi trường Node và nhận diện file test trong `tests/**/*.test.ts`.
 
-- Thêm auth đơn giản bằng API key middleware.
-- Lưu dữ liệu sang SQLite thay vì in-memory.
-- Tách lỗi nghiệp vụ thành custom error class (`NotFoundError`, `ValidationError`).
+## 6) Luồng chạy của ứng dụng
+
+1. Client gọi HTTP vào route (`src/routes/todoRoutes.ts`).
+2. Route validate input bằng Zod.
+3. Route gọi service (`src/services/todoService.ts`).
+4. Service xử lý nghiệp vụ rồi gọi repository (`src/repositories/todoRepository.ts`).
+5. Repository đọc/ghi dữ liệu in-memory.
+6. Kết quả trả ngược lại về route và response cho client.
+
+Luồng này giúp code rõ trách nhiệm, dễ mở rộng và dễ test.
+
+## 7) Gợi ý bài tập tiếp theo
+
+- Thêm endpoint xoá todo.
+- Thêm filter theo status (`GET /todos?status=done`).
+- Thay in-memory bằng SQLite/PostgreSQL.
+- Thêm middleware log request.
